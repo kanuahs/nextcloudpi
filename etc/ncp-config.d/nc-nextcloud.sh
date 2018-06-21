@@ -55,7 +55,7 @@ install()
   }
  
   # REDIS
-  $APTINSTALL redis-server php7.0-redis
+  $APTINSTALL -t buster redis-server php7.2-redis
 
   local REDIS_CONF=/etc/redis/redis.conf
   local REDISPASS="default"
@@ -74,10 +74,10 @@ install()
     systemctl restart redis-server
     systemctl enable  redis-server
 
-    systemctl stop php7.0-fpm
+    systemctl stop php7.2-fpm
     systemctl stop mysql
     sleep 0.5
-    systemctl start php7.0-fpm
+    systemctl start php7.2-fpm
     systemctl start mysql
   }
   
@@ -156,7 +156,7 @@ configure()
 
   # create and configure opcache dir
   OPCACHEDIR=/var/www/nextcloud/data/.opcache
-  sed -i "s|^opcache.file_cache=.*|opcache.file_cache=$OPCACHEDIR|" /etc/php/7.0/mods-available/opcache.ini 
+  sed -i "s|^opcache.file_cache=.*|opcache.file_cache=$OPCACHEDIR|" /etc/php/7.2/mods-available/opcache.ini 
   mkdir -p $OPCACHEDIR
   chown -R www-data:www-data $OPCACHEDIR
 
@@ -242,9 +242,9 @@ EOF
   local UPLOADTMPDIR=/var/www/nextcloud/data/tmp
   mkdir -p "$UPLOADTMPDIR"
   chown www-data:www-data "$UPLOADTMPDIR"
-  sed -i "s|^;\?upload_tmp_dir =.*$|upload_tmp_dir = $UPLOADTMPDIR|" /etc/php/7.0/cli/php.ini
-  sed -i "s|^;\?upload_tmp_dir =.*$|upload_tmp_dir = $UPLOADTMPDIR|" /etc/php/7.0/fpm/php.ini
-  sed -i "s|^;\?sys_temp_dir =.*$|sys_temp_dir = $UPLOADTMPDIR|"     /etc/php/7.0/fpm/php.ini
+  sed -i "s|^;\?upload_tmp_dir =.*$|upload_tmp_dir = $UPLOADTMPDIR|" /etc/php/7.2/cli/php.ini
+  sed -i "s|^;\?upload_tmp_dir =.*$|upload_tmp_dir = $UPLOADTMPDIR|" /etc/php/7.2/fpm/php.ini
+  sed -i "s|^;\?sys_temp_dir =.*$|sys_temp_dir = $UPLOADTMPDIR|"     /etc/php/7.2/fpm/php.ini
 
 
   # slow transfers will be killed after this time
