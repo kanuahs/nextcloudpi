@@ -1,5 +1,7 @@
 
-[v0.67.2](https://github.com/nextcloud/nextcloudpi/commit/868b576) (2018-11-26) change dialog text width to 120
+[v0.67.3](https://github.com/nextcloud/nextcloudpi/commit/484652c) (2018-11-26) nc-datadir: shorten short description
+
+[v0.67.2](https://github.com/nextcloud/nextcloudpi/commit/5e4be44) (2018-11-26) change dialog text width to 120
 
 [v0.67.1](https://github.com/nextcloud/nextcloudpi/commit/b0262f9) (2018-11-23) referrer policy already in .htaccess in NC14.0.4
 
