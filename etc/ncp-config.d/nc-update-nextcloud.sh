@@ -8,11 +8,14 @@
 # More at https://ownyourbits.com/2017/02/13/nextcloud-ready-raspberry-pi-image/
 #
 
-VERSION_=13.0.6
+VERSION_=0
+LATEST=14.0.4
 DESCRIPTION="Update current instance to a new Nextcloud version"
+INFO="Set to 0 to update to the latest avaliable version"
 
 configure()
 {
+  [[ "$VERSION_" == "0" ]] && VERSION_="$LATEST"
   bash /usr/local/bin/ncp-update-nc "$VERSION_"
 }
 

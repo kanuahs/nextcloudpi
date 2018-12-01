@@ -12,6 +12,7 @@ MAXFILESIZE_=10G
 MEMORYLIMIT_=0
 PHPTHREADS_=0
 REDISMEM_=0
+PHPVER=7.2
 
 DESCRIPTION="Configure system limits for NextCloudPi"
 INFO="Examples: 200M or 2G. Write 0 for autoconfig"
@@ -31,37 +32,30 @@ configure()
   local CONF=/var/www/nextcloud/.user.ini
   local CURRENT_PHP_MEM="$( grep "^memory_limit" "$CONF" | sed 's|.*=||' )"
   [[ "$MEMORYLIMIT_" == "0" ]] && MEMORYLIMIT_=$AUTOMEM && echo "Using ${AUTOMEM}B for PHP"
-  sed -i "s/post_max_size=.*/post_max_size=$MAXFILESIZE_/"             "$CONF" 
-  sed -i "s/upload_max_filesize=.*/upload_max_filesize=$MAXFILESIZE_/" "$CONF" 
-  sed -i "s/memory_limit=.*/memory_limit=$MEMORYLIMIT_/"               "$CONF" 
+  sed -i "s/^post_max_size=.*/post_max_size=$MAXFILESIZE_/"             "$CONF" 
+  sed -i "s/^upload_max_filesize=.*/upload_max_filesize=$MAXFILESIZE_/" "$CONF" 
+  sed -i "s/^memory_limit=.*/memory_limit=$MEMORYLIMIT_/"               "$CONF" 
 
   # MAX PHP THREADS
-  local CONF=/etc/php/7.0/fpm/pool.d/www.conf
+  local CONF=/etc/php/${PHPVER}/fpm/pool.d/www.conf
   local CURRENT_THREADS=$( grep "^pm.max_children" "$CONF" | awk '{ print $3 }' )
   [[ "$PHPTHREADS_" == "0" ]] && PHPTHREADS_=$( nproc ) && echo "Using $PHPTHREADS_ PHP threads"
-  sed -i "s|pm.max_children =.*|pm.max_children = $PHPTHREADS_|"           "$CONF"
-  sed -i "s|pm.max_spare_servers =.*|pm.max_spare_servers = $PHPTHREADS_|" "$CONF"
-  sed -i "s|pm.start_servers =.*|pm.start_servers = $PHPTHREADS_|"         "$CONF"
+  sed -i "s|^pm.max_children =.*|pm.max_children = $PHPTHREADS_|"           "$CONF"
+  sed -i "s|^pm.max_spare_servers =.*|pm.max_spare_servers = $PHPTHREADS_|" "$CONF"
+  sed -i "s|^pm.start_servers =.*|pm.start_servers = $PHPTHREADS_|"         "$CONF"
 
   # RESTART PHP
   [[ "$PHPTHREADS_"  != "$CURRENT_THREADS"   ]] || \
   [[ "$MEMORYLIMIT"  != "$CURRENT_PHP_MEM"   ]] || \
-  [[ "$MAXFILESIZE_" != "$CURRENT_FILE_SIZE" ]] && {
-    bash -c " sleep 3
-              service php7.0-fpm stop
-              service mysql      stop
-              sleep 0.5
-              service php7.0-fpm start
-              service mysql      start
-              " &>/dev/null &
-  }
+  [[ "$MAXFILESIZE_" != "$CURRENT_FILE_SIZE" ]] && \
+    bash -c "sleep 3; service php${PHPVER}-fpm restart" &>/dev/null &
 
   # redis max memory
   local CONF=/etc/redis/redis.conf
   local CURRENT_REDIS_MEM=$( grep "^maxmemory" "$CONF" | awk '{ print $2 }' )
   [[ "$REDISMEM_" == "0" ]] && REDISMEM_=$AUTOMEM && echo "Using ${AUTOMEM}B for Redis"
   [[ "$REDISMEM_" != "$CURRENT_REDIS_MEM" ]] && {
-    sed -i "s|maxmemory .*|maxmemory $REDISMEM_|" "$CONF"
+    sed -i "s|^maxmemory .*|maxmemory $REDISMEM_|" "$CONF"
     service redis-server restart
   }
 }

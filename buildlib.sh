@@ -194,7 +194,7 @@ function resize_image()
   echo -e "\n\e[1m[ Resize Image ]\e[0m"
   fallocate -l$SIZE "$IMG"
   parted "$IMG" -- resizepart 2 -1s
-  DEV="$( losetup -f )"
+  DEV="$( sudo losetup -f )"
   mount_raspbian "$IMG"
   sudo resize2fs -f "$DEV"
   echo "Image resized"
@@ -339,6 +339,7 @@ mkdir testing
 mkdir testing/$IMGNAME
 cd testing/$IMGNAME
 binary
+rm  $IMGNAME.torrent
 put $IMGNAME.torrent
 bye
 EOF
@@ -349,7 +350,9 @@ EOF
 user root@ownyourbits.com $FTPPASS
 cd testing/$IMGNAME
 binary
+rm  $IMGNAME.tar.bz2
 put $IMGNAME.tar.bz2
+rm  md5sum
 put md5sum
 bye
 EOF

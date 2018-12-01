@@ -13,12 +13,12 @@ NOTIFYUSER_=ncp
 DESCRIPTION="Automatically apply Nextcloud updates"
 
 # just change this value and re-activate in update.sh to upgrade users
-VERSION=13.0.6
+VERSION=14.0.4
 
 configure() 
 {
   [[ "$ACTIVE_" != "yes" ]] && { 
-    rm /etc/cron.daily/ncp-autoupdate-nc
+    rm -f /etc/cron.daily/ncp-autoupdate-nc
     echo "automatic Nextcloud updates disabled"
     return 0
   }
@@ -26,15 +26,17 @@ configure()
   cat > /etc/cron.daily/ncp-autoupdate-nc <<EOF
 #!/bin/bash
 
-echo -e "[ncp-update-nc]" >> /var/log/ncp.log
+echo -e "[ncp-update-nc]"                          >> /var/log/ncp.log
+/usr/local/bin/ncp-update-nc "$VERSION" 2>&1 | tee -a /var/log/ncp.log
 
-if /usr/local/bin/ncp-update-nc "$VERSION" 2>&1 | tee -a /var/log/ncp.log; then
+if [[ \${PIPESTATUS[0]} -eq 0 ]]; then
 
   VER="\$( sudo -u www-data php /var/www/nextcloud/occ status | grep "version:" | awk '{ print \$3 }' )"
 
   sudo -u www-data php /var/www/nextcloud/occ notification:generate \
     "$NOTIFYUSER_" "NextCloudPi" -l "Nextcloud was updated to \$VER"
 fi
+echo "" >> /var/log/ncp.log
 EOF
   chmod a+x /etc/cron.daily/ncp-autoupdate-nc
   echo "automatic Nextcloud updates enabled"

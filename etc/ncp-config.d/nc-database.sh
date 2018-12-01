@@ -12,22 +12,25 @@ DBDIR_=/media/USBdrive/ncdatabase
 DESCRIPTION="Move your database to a new location, like a USB drive"
 
 INFO="Note that non Unix filesystems such as NTFS are not supported
-because they do not provide a compatible user/permissions system
+because they do not provide a compatible user/permissions system.
 
 You need to use a USB drive that is permanently on and is responsive 
 or the database will fail.
+
+Please note that the default location, when first installed is /var/lib/mysql/. 
+Move it to the desired location by editing the DBDIR= field, the one shown is an example.
 
 ** If it ever fails with a white page, move the database back to the SD **"
 
 is_active()
 {
-  local SRCDIR=$( grep datadir /etc/mysql/mariadb.conf.d/50-server.cnf | awk -F "= " '{ print $2 }' )
+  local SRCDIR=$( grep datadir /etc/mysql/mariadb.conf.d/90-ncp.cnf | awk -F "= " '{ print $2 }' )
   [[ "$SRCDIR" != "/var/lib/mysql" ]]
 }
 
 configure()
 {
-  local SRCDIR=$( grep datadir /etc/mysql/mariadb.conf.d/50-server.cnf | awk -F "= " '{ print $2 }' )
+  local SRCDIR=$( grep datadir /etc/mysql/mariadb.conf.d/90-ncp.cnf | awk -F "= " '{ print $2 }' )
   [ -d "$SRCDIR" ] || { echo -e "database directory $SRCDIR not found"; return 1; }
 
   [ -d "$DBDIR_" ] && {
@@ -54,7 +57,7 @@ configure()
   echo "moving database to $DBDIR_..."
   service mysql stop
   mv "$SRCDIR" "$DBDIR_" && \
-    sed -i "s|^datadir.*|datadir = $DBDIR_|" /etc/mysql/mariadb.conf.d/50-server.cnf
+    sed -i "s|^datadir.*|datadir = $DBDIR_|" /etc/mysql/mariadb.conf.d/90-ncp.cnf
   service mysql start 
 
   sudo -u www-data php occ maintenance:mode --off

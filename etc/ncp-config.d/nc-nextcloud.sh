@@ -8,13 +8,14 @@
 # More at https://ownyourbits.com/2017/02/13/nextcloud-ready-raspberry-pi-image/
 #
 
-VER_=13.0.6
+VER_=14.0.4
 BETA_=no
 MAXFILESIZE_=2G
 MEMORYLIMIT_=768M
 MAXTRANSFERTIME_=3600
 DBADMIN=ncadmin
 REDIS_MEM=3gb
+PHPVER=7.2
 DESCRIPTION="Install any NextCloud version"
 
 APTINSTALL="apt-get install -y --no-install-recommends"
@@ -37,11 +38,14 @@ install()
   # During build, this step is run before ncp.sh. Avoid executing twice
   [[ -f /usr/lib/systemd/system/nc-provisioning.service ]] && return 0
 
+  local RELEASE=stretch
+
   # Optional packets for Nextcloud and Apps
   apt-get update
   $APTINSTALL lbzip2 iputils-ping
-  $APTINSTALL php-smbclient                          # for external storage
-  $APTINSTALL php-imagick imagemagick-6-common       # for gallery
+  $APTINSTALL -t $RELEASE php-smbclient                                         # for external storage
+  $APTINSTALL -t $RELEASE imagemagick php${PHPVER}-imagick php${PHPVER}-exif    # for gallery
+
 
   # POSTFIX
   $APTINSTALL postfix || {
@@ -54,14 +58,15 @@ install()
     mv /newaliases /usr/bin/newaliases
   }
  
-  # REDIS
-  $APTINSTALL redis-server php7.0-redis
+  $APTINSTALL redis-server
+  $APTINSTALL -t $RELEASE php${PHPVER}-redis
 
   local REDIS_CONF=/etc/redis/redis.conf
   local REDISPASS="default"
   sed -i "s|# unixsocket .*|unixsocket /var/run/redis/redis.sock|" $REDIS_CONF
   sed -i "s|# unixsocketperm .*|unixsocketperm 770|"               $REDIS_CONF
   sed -i "s|# requirepass .*|requirepass $REDISPASS|"              $REDIS_CONF
+  sed -i 's|# maxmemory-policy .*|maxmemory-policy allkeys-lru|'   $REDIS_CONF
   sed -i 's|# rename-command CONFIG ""|rename-command CONFIG ""|'  $REDIS_CONF
   sed -i "s|^port.*|port 0|"                                       $REDIS_CONF
   echo "maxmemory $REDIS_MEM" >> $REDIS_CONF
@@ -69,17 +74,9 @@ install()
 
   usermod -a -G redis www-data
 
-  # refresh configuration, only needed in curl installer
-  [[ ! -f /.ncp-image ]] && {
-    systemctl restart redis-server
-    systemctl enable  redis-server
-
-    systemctl stop php7.0-fpm
-    systemctl stop mysql
-    sleep 0.5
-    systemctl start php7.0-fpm
-    systemctl start mysql
-  }
+  service redis-server restart
+  update-rc.d redis-server enable
+  service php${PHPVER}-fpm restart
   
   # service to randomize passwords on first boot
   mkdir -p /usr/lib/systemd/system
@@ -155,8 +152,8 @@ configure()
   fi
 
   # create and configure opcache dir
-  OPCACHEDIR=/var/www/nextcloud/data/.opcache
-  sed -i "s|^opcache.file_cache=.*|opcache.file_cache=$OPCACHEDIR|" /etc/php/7.0/mods-available/opcache.ini 
+  local OPCACHEDIR=/var/www/nextcloud/data/.opcache
+  sed -i "s|^opcache.file_cache=.*|opcache.file_cache=$OPCACHEDIR|" /etc/php/${PHPVER}/mods-available/opcache.ini
   mkdir -p $OPCACHEDIR
   chown -R www-data:www-data $OPCACHEDIR
 
@@ -242,9 +239,9 @@ EOF
   local UPLOADTMPDIR=/var/www/nextcloud/data/tmp
   mkdir -p "$UPLOADTMPDIR"
   chown www-data:www-data "$UPLOADTMPDIR"
-  sed -i "s|^;\?upload_tmp_dir =.*$|upload_tmp_dir = $UPLOADTMPDIR|" /etc/php/7.0/cli/php.ini
-  sed -i "s|^;\?upload_tmp_dir =.*$|upload_tmp_dir = $UPLOADTMPDIR|" /etc/php/7.0/fpm/php.ini
-  sed -i "s|^;\?sys_temp_dir =.*$|sys_temp_dir = $UPLOADTMPDIR|"     /etc/php/7.0/fpm/php.ini
+  sed -i "s|^;\?upload_tmp_dir =.*$|upload_tmp_dir = $UPLOADTMPDIR|" /etc/php/${PHPVER}/cli/php.ini
+  sed -i "s|^;\?upload_tmp_dir =.*$|upload_tmp_dir = $UPLOADTMPDIR|" /etc/php/${PHPVER}/fpm/php.ini
+  sed -i "s|^;\?sys_temp_dir =.*$|sys_temp_dir = $UPLOADTMPDIR|"     /etc/php/${PHPVER}/fpm/php.ini
 
 
   # slow transfers will be killed after this time

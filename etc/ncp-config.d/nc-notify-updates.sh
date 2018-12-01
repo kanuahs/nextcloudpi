@@ -20,7 +20,7 @@ NCDIR=/var/www/nextcloud
 configure()
 {
   [[ $ACTIVE_ != "yes" ]] && {
-    rm /etc/cron.d/ncp-notify-updates
+    rm -f /etc/cron.d/ncp-notify-updates
     service cron restart
     echo "update web notifications disabled"
     return 0
@@ -85,7 +85,7 @@ EOF
 
   # check every hour at 40th minute
   echo "40  */${CHECKINTERVAL} *  *  *  root /usr/local/bin/ncp-notify-update && /usr/local/bin/ncp-notify-unattended-upgrade" > /etc/cron.d/ncp-notify-updates
-  service cron restart
+  [[ -f /run/crond.pid ]] && service cron restart
 
   echo "update web notifications enabled"
 }

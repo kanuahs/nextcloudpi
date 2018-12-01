@@ -37,7 +37,7 @@ SWP="$( swapon | tail -1 | awk '{ print $1 }' )"
 echo "swapfile|$SWP"
 
 # Database
-DBDIR=$( grep datadir /etc/mysql/mariadb.conf.d/50-server.cnf | awk -F "= " '{ print $2 }' )
+DBDIR=$( grep datadir /etc/mysql/mariadb.conf.d/90-ncp.cnf | awk -F "= " '{ print $2 }' )
 test -d "$DBDIR" || DBDIRINFO=" (doesn't exist)"
 echo "dbdir|$DBDIR$DBDIRINFO"
 
@@ -87,7 +87,7 @@ CERTS="$( grep "SSLCertificateFile /etc/letsencrypt/live/" /etc/apache2/sites-av
 [[ "$CERTS" == "" ]] && CERTS=none
 echo "certificates|$CERTS"
 
-RESOLV="$( ping -c 1 "$CERTS" 2>/dev/null | head -1 | grep -oP '\d{1,3}(.\d{1,3}){3}' )"
+RESOLV="$( ping -c1 -w1 "$CERTS" 2>/dev/null | head -1 | grep -oP '\d{1,3}(.\d{1,3}){3}' )"
 echo "NAT loopback|$( [[ "$RESOLV" == "$IP" ]] && echo yes || echo no )"
 
 # Other

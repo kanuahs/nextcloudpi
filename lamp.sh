@@ -19,21 +19,32 @@
 # More at https://ownyourbits.com/2017/02/13/nextcloud-ready-raspberry-pi-image/
 #
 
+PHPVER=7.2
 APTINSTALL="apt-get install -y --no-install-recommends"
 export DEBIAN_FRONTEND=noninteractive
 
 install()
 {
+    # GET PHP 7.2 SOURCES
+    ##########################################
+
+    local RELEASE=stretch
     apt-get update
+    $APTINSTALL apt-transport-https gnupg2 wget ca-certificates
+    echo "deb https://packages.sury.org/php/ stretch main" > /etc/apt/sources.list.d/php.list
+    wget -q https://packages.sury.org/php/apt.gpg -O- | apt-key add -
 
     # INSTALL 
     ##########################################
 
-    $APTINSTALL apt-utils cron
+    apt-get update
+    $APTINSTALL apt-utils cron curl
     $APTINSTALL apache2
-    $APTINSTALL php7.0 php7.0-curl php7.0-gd php7.0-fpm php7.0-cli php7.0-opcache \
-                php7.0-mbstring php7.0-xml php7.0-zip php7.0-fileinfo php7.0-ldap \
-                php7.0-intl libmagickcore-6.q16-2-extra php7.0-imagick php-mcrypt
+
+    $APTINSTALL -t $RELEASE php${PHPVER} php${PHPVER}-curl php${PHPVER}-gd php${PHPVER}-fpm php${PHPVER}-cli php${PHPVER}-opcache \
+                            php${PHPVER}-mbstring php${PHPVER}-xml php${PHPVER}-zip php${PHPVER}-fileinfo php${PHPVER}-ldap \
+                            php${PHPVER}-intl php${PHPVER}-bz2 php${PHPVER}-json
+
     mkdir -p /run/php
 
     # mariaDB password
@@ -43,7 +54,7 @@ install()
 
     debconf-set-selections <<< "mariadb-server-5.5 mysql-server/root_password password $DBPASSWD"
     debconf-set-selections <<< "mariadb-server-5.5 mysql-server/root_password_again password $DBPASSWD"
-    $APTINSTALL mariadb-server php7.0-mysql 
+    $APTINSTALL mariadb-server php${PHPVER}-mysql
     mkdir -p /run/mysqld
     chown mysql /run/mysqld
 
@@ -78,14 +89,13 @@ EOF
     cat >> /etc/apache2/apache2.conf <<EOF
 <IfModule mod_headers.c>
   Header always set Strict-Transport-Security "max-age=15768000; includeSubDomains; preload"
-  Header always set Referrer-Policy "no-referrer"
 </IfModule>
 EOF
 
     # CONFIGURE PHP7
     ##########################################
 
-    cat > /etc/php/7.0/mods-available/opcache.ini <<EOF
+    cat > /etc/php/${PHPVER}/mods-available/opcache.ini <<EOF
 zend_extension=opcache.so
 opcache.enable=1
 opcache.enable_cli=1
@@ -101,7 +111,7 @@ EOF
     a2enmod http2
     a2enconf http2 
     a2enmod proxy_fcgi setenvif
-    a2enconf php7.0-fpm
+    a2enconf php${PHPVER}-fpm
     a2enmod rewrite
     a2enmod headers
     a2enmod dir
@@ -117,9 +127,10 @@ EOF
     $APTINSTALL ssl-cert # self signed snakeoil certs
 
     # configure MariaDB ( UTF8 4 byte support )
-    sed -i '/\[mysqld\]/ainnodb_large_prefix=on'       /etc/mysql/mariadb.conf.d/50-server.cnf 
-    sed -i '/\[mysqld\]/ainnodb_file_per_table=1'      /etc/mysql/mariadb.conf.d/50-server.cnf 
-    sed -i '/\[mysqld\]/ainnodb_file_format=barracuda' /etc/mysql/mariadb.conf.d/50-server.cnf
+    cp /etc/mysql/mariadb.conf.d/50-server.cnf /etc/mysql/mariadb.conf.d/90-ncp.cnf
+    sed -i '/\[mysqld\]/ainnodb_large_prefix=on'       /etc/mysql/mariadb.conf.d/90-ncp.cnf
+    sed -i '/\[mysqld\]/ainnodb_file_per_table=1'      /etc/mysql/mariadb.conf.d/90-ncp.cnf
+    sed -i '/\[mysqld\]/ainnodb_file_format=barracuda' /etc/mysql/mariadb.conf.d/90-ncp.cnf
 
   # launch mariadb if not already running
   if ! pgrep -c mysqld &>/dev/null; then

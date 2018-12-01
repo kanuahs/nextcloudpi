@@ -11,7 +11,7 @@
 ACTIVE_=no
 IP_=192.168.1.130
 
-DESCRIPTION="Set up a static IP address (on), or DHCP (off)"
+DESCRIPTION="Set up a static IP address (ACTIVE=yes), or DHCP (ACTIVE=no)"
 
 configure() 
 {
@@ -90,7 +90,7 @@ EOF
   }
  
   sudo -u www-data php /var/www/nextcloud/occ config:system:set trusted_domains 1 --value="$IP_"
-  sudo -u www-data php /var/www/nextcloud/occ config:system:set overwrite.cli.url --value=https://"$IP_"
+  sudo -u www-data php /var/www/nextcloud/occ config:system:set overwrite.cli.url --value=https://"$IP_"/
   echo "Static IP set to $IP_"
 }
 

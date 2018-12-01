@@ -11,7 +11,6 @@
 set -e
 source buildlib.sh
 
-IP=${1:-192.168.0.145}      # For QEMU automated testing (optional)
 SIZE=3G                     # Raspbian image size
 #CLEAN=0                    # Pass this envvar to skip cleaning download cache
 IMG="NextCloudPi_RPi_$( date  "+%m-%d-%y" ).img"
@@ -26,6 +25,9 @@ prepare_dirs                   # tmp cache output
 download_raspbian "$IMG"
 resize_image      "$IMG" "$SIZE"
 update_boot_uuid  "$IMG"       # PARTUUID has changed after resize
+
+# make sure we don't accidentally disable first run wizard
+rm -f ncp-web/{wizard.cfg,ncp-web.cfg}
 
 ## BUILD NCP
 
@@ -42,8 +44,10 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
 
     # update packages
     apt-get update
-    apt-get upgrade -y
-    apt-get dist-upgrade -y
+
+    # As of 10-2018 this upgrades raspi-kernel and messes up wifi and BTRFS
+    #apt-get upgrade -y
+    #apt-get dist-upgrade -y
 
     # As of 03-2018, you dont get a big kernel update by doing
     # this, so better be safe. Might uncomment again in the future
