@@ -2,13 +2,15 @@
 
 source /usr/local/etc/library.sh
 
+PHPVER=7.2
+
 set -e
 
 [[ "$1" == "stop" ]] && {
   echo "Stopping apache"
   apachectl graceful-stop
   echo "Stopping PHP-fpm"
-  killall php-fpm7.0
+  pkill -f php-fpm
   echo "Stopping mariaDB"
   mysqladmin -u root shutdown
   echo "LAMP cleanup complete"
@@ -19,7 +21,7 @@ set -e
 persistent_cfg /etc/apache2
 
 echo "Starting PHP-fpm"
-php-fpm7.0 &
+php-fpm${PHPVER}
 
 echo "Starting Apache"
 /usr/sbin/apache2ctl start

@@ -26,6 +26,7 @@ UFW.sh
 nc-snapshot.sh
 nc-snapshot-auto.sh
 nc-audit.sh
+nc-hdd-monitor.sh
 SSH.sh
 fail2ban.sh
 NFS.sh
@@ -44,14 +45,6 @@ cp etc/library.sh /usr/local/etc/
 source /usr/local/etc/library.sh
 
 mkdir -p "$CONFDIR"
-
-# rename DDNS entries TODO temporary
-[[ -f "$CONFDIR"/no-ip.sh ]] && {
-  mv "$CONFDIR"/no-ip.sh   "$CONFDIR"/DDNS_no-ip.sh
-  mv "$CONFDIR"/freeDNS.sh "$CONFDIR"/DDNS_freeDNS.sh
-  mv "$CONFDIR"/duckDNS.sh "$CONFDIR"/DDNS_duckDNS.sh
-  mv "$CONFDIR"/spDYN.sh   "$CONFDIR"/DDNS_spDYN.sh
-}
 
 # prevent installing some apt packages in the docker version
 [[ -f /.docker-image ]] && {
@@ -106,7 +99,7 @@ chmod 770                  /var/www/ncp-web
   for opt in $EXCL_DOCKER; do rm $CONFDIR/$opt; done
 
   # update services
-  cp docker-common/{lamp/010lamp,nextcloud/020nextcloud,nextcloudpi/000ncp} /etc/services-available.d
+  cp docker-common/{lamp/010lamp,nextcloud/020nextcloud,nextcloudpi/000ncp} /etc/services-enabled.d
 
 }
 
@@ -125,6 +118,7 @@ source /usr/local/etc/library.sh
 
 # INIT NCP CONFIG (first run)
 persistent_cfg /usr/local/etc/ncp-config.d /data/ncp
+persistent_cfg /usr/local/bin /data/bin
 persistent_cfg /etc/services-enabled.d
 persistent_cfg /etc/letsencrypt                    # persist SSL certificates
 persistent_cfg /etc/shadow                         # persist ncp-web password
@@ -135,9 +129,7 @@ persistent_cfg /etc/cron.weekly
 
 exit 0
 EOF
-      /etc/services-available.d/000ncp
-      rm /data/etc/letsencrypt/live
-      mv /data/etc/live /data/etc/letsencrypt
+      sed -i 's|exit 1|exit 0|' /usr/local/sbin/update-rc.d
     }
   }
 
@@ -146,26 +138,10 @@ EOF
     :
   }
 
-  # faster previews
-  [[ -f /etc/php/7.0/mods-available/imagick.ini ]] || {
-    apt-get update
-    apt-get install -y --no-install-recommends php-imagick imagemagick-6-common
-  }
-
-  # no-origin policy for enhanced privacy
-  grep -q "Referrer-Policy" /etc/apache2/apache2.conf || {
-    cat >> /etc/apache2/apache2.conf <<EOF
-<IfModule mod_headers.c>
-  Header always set Referrer-Policy "no-referrer"
-</IfModule>
-EOF
-  }
-
-  # NC14 doesnt support php mail
-  mail_smtpmode=$(sudo -u www-data php /var/www/nextcloud/occ config:system:get mail_smtpmode)
-  [[ $mail_smtpmode == "php" ]] && {
-    sudo -u www-data php /var/www/nextcloud/occ config:system:set mail_smtpmode --value="sendmail"
-  }
+  # Reinstall DDNS_spDYN for use of IPv6 
+  rm -r /usr/local/etc/spdnsupdater
+  cd /usr/local/etc/ncp-config.d
+  install_script DDNS_spDYN.sh
 
   # update nc-restore
   cd "$CONFDIR" &>/dev/null
@@ -173,15 +149,89 @@ EOF
   install_script nc-restore.sh
   cd -          &>/dev/null
 
-  # install preview generator
-  sudo -u www-data php /var/www/nextcloud/occ app:install previewgenerator
-  sudo -u www-data php /var/www/nextcloud/occ app:enable  previewgenerator
+      # Redis eviction policy
+      grep -q "^maxmemory-policy allkeys-lru" /etc/redis/redis.conf || {
+        sed -i 's|# maxmemory-policy .*|maxmemory-policy allkeys-lru|' /etc/redis/redis.conf
+        service redis-server restart
+      }
 
-  # use separate db config file
-  [[ -f /etc/mysql/mariadb.conf.d/90-ncp.cnf ]] || {
-    cp /etc/mysql/mariadb.conf.d/50-server.cnf /etc/mysql/mariadb.conf.d/90-ncp.cnf
-    service mysql restart
+      # allow .lan domains
+      ncc config:system:set trusted_domains 7 --value="nextcloudpi"
+      ncc config:system:set trusted_domains 8 --value="nextcloudpi.lan"
+
+      # possible traces of the old name
+      sed -i 's|NextCloudPlus|NextCloudPi|' /usr/local/bin/ncp-notify-update
+      sed -i 's|NextCloudPlus|NextCloudPi|' /usr/local/bin/ncp-notify-unattended-upgrade
+
+      # nc-prettyURL: fix for NC14
+      URL="$(ncc config:system:get overwrite.cli.url)"
+      [[ "${URL: -1}" != "/" ]] && ncc config:system:set overwrite.cli.url --value="${URL}/"
+
+      # Implement logrotate restrictions
+      [[ -f /etc/rsyslog.d/20-ufw.conf ]] && { grep -q "^\& stop" /etc/rsyslog.d/20-ufw.conf ||  echo "& stop" >> /etc/rsyslog.d/20-ufw.conf; }
+      [[ -f /etc/logrotate.d/ufw ]] && { grep -q maxsize /etc/logrotate.d/ufw     || sed -i /weekly/amaxsize2M /etc/logrotate.d/ufw; }
+      grep -q maxsize /etc/logrotate.d/apache2 || sed -i /weekly/amaxsize2M /etc/logrotate.d/apache2
+      service rsyslog restart &>/dev/null
+      cat > /etc/logrotate.d/ncp <<'EOF'
+/var/log/ncp.log
+{
+        rotate 4
+        size 500K
+        missingok
+        notifempty
+        compress
+}
+EOF
+
+  # update launcher
+  cat > /home/www/ncp-launcher.sh <<'EOF'
+#!/bin/bash
+DIR=/usr/local/etc/ncp-config.d
+[[ -f $DIR/$1  ]] || { echo "File not found"; exit 1; }
+[[ "$1" =~ ../ ]] && { echo "Forbidden path"; exit 2; }
+source /usr/local/etc/library.sh
+cd $DIR
+launch_script $1
+EOF
+  chmod 700 /home/www/ncp-launcher.sh
+
+  # Adjust sources
+  export DEBIAN_FRONTEND=noninteractive
+  apt-get update
+  apt-get install -y --no-install-recommends apt-transport-https gnupg
+  echo "deb https://packages.sury.org/php/ stretch main" > /etc/apt/sources.list.d/php.list
+  wget -q https://packages.sury.org/php/apt.gpg -O- | apt-key add -
+  rm -f /etc/apt/sources.list.d/ncp-buster.list
+  rm -f /etc/apt/preferences.d/10-ncp-buster
+  apt-get update
+
+  apt-get remove -y libcurl4 &>/dev/null
+  apt-get install -y --no-install-recommends curl debian-goodies
+  [[ -f /usr/bin/raspi-config ]] && apt-get install -y --no-install-recommends rpi-update
+  apt-get --with-new-pkgs upgrade -y
+  apt-get autoremove -y
+
+  # Update btrfs-sync
+  wget -q https://raw.githubusercontent.com/nachoparker/btrfs-sync/master/btrfs-sync -O /usr/local/bin/btrfs-sync
+
+  # Update php imagick
+  apt-get install -y --no-install-recommends imagemagick php7.2-imagick php7.2-exif
+
+  # update to NC14.0.4
+  F="$CONFDIR"/nc-autoupdate-nc.sh
+  grep -q '^ACTIVE_=yes$' "$F" && {
+    cd "$CONFDIR" &>/dev/null
+    activate_script nc-autoupdate-nc.sh
+    cd -          &>/dev/null
   }
+
+  # remove redundant opcache configuration. Leave until update bug is fixed -> https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=815968
+  # Bug #416 reappeared after we moved to php7.2 and debian buster packages. (keep last)
+  [[ "$( ls -l /etc/php/7.2/fpm/conf.d/*-opcache.ini |  wc -l )" -gt 1 ]] && rm "$( ls /etc/php/7.2/fpm/conf.d/*-opcache.ini | tail -1 )"
+  [[ "$( ls -l /etc/php/7.2/cli/conf.d/*-opcache.ini |  wc -l )" -gt 1 ]] && rm "$( ls /etc/php/7.2/cli/conf.d/*-opcache.ini | tail -1 )"
+
+  # in NC14.0.4 the referrer policy is included in .htaccess
+  grep -q Referrer-Policy /var/www/nextcloud/.htaccess && sed -i /Referrer-Policy/d /etc/apache2/apache2.conf
 
 } # end - only live updates
 

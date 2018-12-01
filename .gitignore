@@ -1,5 +1,4 @@
 .*.swp
-.idea/
 qemu-raspbian-network/
 output/
 cache/
@@ -8,4 +7,6 @@ armbian/
 raspbian_root
 raspbian_boot
 ncp-web/wizard.cfg
+ncp-web/ncp-web.cfg
 docker-armhf/qemu-arm-static
+.vagrant/

@@ -130,7 +130,8 @@ EOF
   cat > /home/www/ncp-launcher.sh <<'EOF'
 #!/bin/bash
 DIR=/usr/local/etc/ncp-config.d
-test -f $DIR/$1 || { echo "File not found"; exit 1; }
+[[ -f $DIR/$1  ]] || { echo "File not found"; exit 1; }
+[[ "$1" =~ ../ ]] && { echo "Forbidden path"; exit 2; }
 source /usr/local/etc/library.sh
 cd $DIR
 launch_script $1
@@ -184,6 +185,19 @@ EOF
   # update to latest version from github as part of the build process
   bin/ncp-update $BRANCH
 
+  # LIMIT LOG SIZE
+  grep -q maxsize /etc/logrotate.d/apache2 || sed -i /weekly/amaxsize2M /etc/logrotate.d/apache2
+  cat >> /etc/logrotate.d/ncp <<'EOF'
+/var/log/ncp.log
+{
+        rotate 4
+        size 500K
+        missingok
+        notifempty
+        compress
+}
+EOF
+
   # ONLY FOR IMAGE BUILDS
   if [[ -f /.ncp-image ]]; then
     rm -rf /var/log/ncp.log
@@ -207,7 +221,7 @@ EOF
     chmod a+x /etc/update-motd.d/*
 
     ## HOSTNAME AND mDNS
-    $APTINSTALL avahi-daemon
+    [[ -f /.docker-image ]] || $APTINSTALL avahi-daemon
     echo nextcloudpi > /etc/hostname
     sed -i '$c127.0.1.1 nextcloudpi' /etc/hosts
 

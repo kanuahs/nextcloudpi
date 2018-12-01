@@ -31,6 +31,7 @@ BACKUPFILE="$1"
 
 DBADMIN=ncadmin
 DBPASSWD="$( grep password /root/.my.cnf | sed 's|password=||' )"
+PHPVER=7.2
 
 DIR="$( cd "$( dirname "$BACKUPFILE" )" &>/dev/null && pwd )" #abspath
 
@@ -41,6 +42,8 @@ DIR="$( cd "$( dirname "$BACKUPFILE" )" &>/dev/null && pwd )" #abspath
 [[ "$DIR" =~ "$NCDIR" ]] && { echo "Refusing to restore from $NCDIR"; exit 1; }
 
 TMPDIR="$( mktemp -d "$( dirname "$BACKUPFILE" )"/ncp-restore.XXXXXX )" || { echo "Failed to create temp dir" >&2; exit 1; }
+grep -q -e ext -e btrfs <( stat -fc%T "$TMPDIR" ) || { echo "Can only restore from ext/btrfs filesystems"     >&2; exit 1; }
+
 TMPDIR="$( cd "$TMPDIR" &>/dev/null && pwd )" || { echo "$TMPDIR not found"; exit 1; } #abspath
 cleanup(){  local RET=$?; echo "Cleanup..."; rm -rf "${TMPDIR}"; trap "" EXIT; exit $RET; }
 trap cleanup INT TERM HUP ERR EXIT
@@ -140,14 +143,14 @@ else
 fi
 
 # Just in case we moved the opcache dir
-sed -i "s|^opcache.file_cache=.*|opcache.file_cache=$DATADIR/.opcache|" /etc/php/7.0/mods-available/opcache.ini
+sed -i "s|^opcache.file_cache=.*|opcache.file_cache=$DATADIR/.opcache|" /etc/php/${PHPVER}/mods-available/opcache.ini
 
 # tmp upload dir
 mkdir -p "$DATADIR/tmp" 
 chown www-data:www-data "$DATADIR/tmp"
-sed -i "s|^;\?upload_tmp_dir =.*$|upload_tmp_dir = $DATADIR/tmp|" /etc/php/7.0/cli/php.ini
-sed -i "s|^;\?upload_tmp_dir =.*$|upload_tmp_dir = $DATADIR/tmp|" /etc/php/7.0/fpm/php.ini
-sed -i "s|^;\?sys_temp_dir =.*$|sys_temp_dir = $DATADIR/tmp|"     /etc/php/7.0/fpm/php.ini
+sed -i "s|^;\?upload_tmp_dir =.*$|upload_tmp_dir = $DATADIR/tmp|" /etc/php/${PHPVER}/cli/php.ini
+sed -i "s|^;\?upload_tmp_dir =.*$|upload_tmp_dir = $DATADIR/tmp|" /etc/php/${PHPVER}/fpm/php.ini
+sed -i "s|^;\?sys_temp_dir =.*$|sys_temp_dir = $DATADIR/tmp|"     /etc/php/${PHPVER}/fpm/php.ini
 
 # update fail2ban logpath
 [[ ! -f /.docker-image ]] && {
@@ -160,13 +163,7 @@ bash /usr/local/bin/nextcloud-domain.sh
 
 # restart PHP if needed
 [[ "$NEED_RESTART" == "1" ]] && \
-  bash -c " sleep 3
-            service php7.0-fpm stop
-            service mysql      stop
-            sleep 0.5
-            service php7.0-fpm start
-            service mysql      start
-            " &>/dev/null &
+  bash -c " sleep 3; service php${PHPVER}-fpm restart" &>/dev/null &
 EOF
   chmod +x /usr/local/bin/ncp-restore
 }

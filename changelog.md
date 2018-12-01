@@ -1,9 +1,93 @@
 
-[v0.60.3](https://github.com/nextcloud/nextcloudpi/commit/b4d7776) (2018-09-23) nc-update-nextcloud: workaround news integrity bug
+[v0.67.3](https://github.com/nextcloud/nextcloudpi/commit/d3c72cc) (2018-11-26) nc-datadir: shorten short description
+
+[v0.67.2 ](https://github.com/nextcloud/nextcloudpi/commit/5e4be44) (2018-11-26) change dialog text width to 120
+
+[v0.67.1 ](https://github.com/nextcloud/nextcloudpi/commit/b0262f9) (2018-11-23) referrer policy already in .htaccess in NC14.0.4
+
+[v0.67.0 ](https://github.com/nextcloud/nextcloudpi/commit/bcac4bc) (2018-11-22) upgrade to NC14.0.4
+
+[v0.66.6 ](https://github.com/nextcloud/nextcloudpi/commit/5aeb83c) (2018-11-18) nc-static-IP: clarify usage
+
+[v0.66.4 ](https://github.com/nextcloud/nextcloudpi/commit/f3666d6) (2018-11-11) build: package php7.2-imagick now available
+
+[v0.66.3 ](https://github.com/nextcloud/nextcloudpi/commit/d4206f7) (2018-11-11) nc-hdd-test: remove redundancy
+
+[v0.66.2 ](https://github.com/nextcloud/nextcloudpi/commit/1b25141) (2018-11-06) dont fail removing cronfile
+
+[v0.66.1 ](https://github.com/nextcloud/nextcloudpi/commit/089bebb) (2018-11-04) nc-info: speedup
+
+[v0.66.0 ](https://github.com/nextcloud/nextcloudpi/commit/3cd1cd5) (2018-11-04) add nc-hdd-monitor
+
+[v0.65.0 ](https://github.com/nextcloud/nextcloudpi/commit/6138183) (2018-11-03) add nc-test-hdd
+
+[v0.64.12](https://github.com/nextcloud/nextcloudpi/commit/5e7f3da) (2018-11-03) docker: fix provisioning on a stopped the container
+
+[v0.64.11](https://github.com/nextcloud/nextcloudpi/commit/1758331) (2018-10-27) check for path transversal
+
+[v0.64.10](https://github.com/nextcloud/nextcloudpi/commit/26083e9) (2018-10-24) update: update sources
+
+[v0.64.9 ](https://github.com/nextcloud/nextcloudpi/commit/54e5c21) (2018-10-23) ncp-config: use simple characters
+
+[v0.64.8 ](https://github.com/nextcloud/nextcloudpi/commit/9d998ae) (2018-10-22) ncp-web: update chinese translations
+
+[v0.64.7 ](https://github.com/nextcloud/nextcloudpi/commit/20a4147) (2018-10-21) ncp-web: update chinese translations
+
+[v0.64.6 ](https://github.com/nextcloud/nextcloudpi/commit/bd9b9f1) (2018-10-21) DDNS_spDYN: switch to wget and more
+
+[v0.64.5 ](https://github.com/nextcloud/nextcloudpi/commit/b5ba95a) (2018-10-21) ncp-web: fixed hover text for ncp wizard icon (#688)
+
+[v0.64.4 ](https://github.com/nextcloud/nextcloudpi/commit/d2155b0) (2018-10-21) nc-rsync: dont preserve ACL
+
+[v0.64.3 ](https://github.com/nextcloud/nextcloudpi/commit/6fb1c06) (2018-10-21) nc-rsync: sync datadir, not only content (#686) (#687)
+
+[v0.64.2 ](https://github.com/nextcloud/nextcloudpi/commit/d6b7267) (2018-10-14) ncp-update-nc: make sure cron.php is not running and there are no pending jobs
+
+[v0.64.1 ](https://github.com/nextcloud/nextcloudpi/commit/c036525) (2018-10-12) docker: make bin persistent too
+
+[v0.64.0 ](https://github.com/nextcloud/nextcloudpi/commit/a9b1542) (2018-10-12) upgrade to NC14.0.3
+
+[v0.63.0 ](https://github.com/nextcloud/nextcloudpi/commit/b4555ba) (2018-10-11) upgrade to NC14.0.2
+
+[v0.62.10](https://github.com/nextcloud/nextcloudpi/commit/48ac238) (2018-10-07) limit logs size with logrotate
+
+[v0.62.9 ](https://github.com/nextcloud/nextcloudpi/commit/694a885) (2018-10-07) DDNS_spDYN reinstall DDNS_spDYN for use of IPv6 (#642)
+
+[v0.62.8 ](https://github.com/nextcloud/nextcloudpi/commit/c6da8a9) (2018-10-07) Use DIG instead of NSLOOKUP in DDNS apps (#666)
+
+[v0.62.7 ](https://github.com/nextcloud/nextcloudpi/commit/54e0968) (2018-10-07) nc-prettyURL: Catch failure of maintenance:update:htaccess (#654)
+
+[v0.62.6 ](https://github.com/nextcloud/nextcloudpi/commit/5e3d411) (2018-10-06) nc-limits: fix PHP service restart
+
+[v0.62.5 ](https://github.com/nextcloud/nextcloudpi/commit/0bf6045) (2018-10-03) nc-update-nc: dont fix the news app if there is no news app
+
+[v0.62.4 ](https://github.com/nextcloud/nextcloudpi/commit/aa886f9) (2018-10-03) nc-update-nextcloud: option to upgrade to the latest version
+
+[v0.62.3 ](https://github.com/nextcloud/nextcloudpi/commit/af4b646) (2018-10-03) nc-autoupdate-nc: fix repeating notification
+
+[v0.62.2 ](https://github.com/nextcloud/nextcloudpi/commit/6324949) (2018-10-02) nc-prettyURL: make sure URL is correct
+
+[v0.62.1 ](https://github.com/nextcloud/nextcloudpi/commit/4f20b71) (2018-09-30) redis: change eviction policy
+
+[v0.62.0 ](https://github.com/nextcloud/nextcloudpi/commit/4bce1bb) (2018-09-26) upgrade to PHP7.2
+
+[v0.61.0 ](https://github.com/nextcloud/nextcloudpi/commit/66e4d83) (2018-09-26) upgrade to NC14
+
+[v0.60.8 ](https://github.com/nextcloud/nextcloudpi/commit/6152e7e) (2018-09-24) ncp-web: put configuration in a separate file from available languages
+
+[v0.60.7 ](https://github.com/nextcloud/nextcloudpi/commit/cdbb750) (2018-09-24) docker: disable auto-upgrade until it is adapted to containers
+
+[v0.60.6 ](https://github.com/nextcloud/nextcloudpi/commit/1150ed8) (2018-09-24) nc-format-USB: fix
+
+[v0.60.5 ](https://github.com/nextcloud/nextcloudpi/commit/3de5fe0) (2018-09-23) armbian: fix locales for ncp-config
+
+[v0.60.4 ](https://github.com/nextcloud/nextcloudpi/commit/a7f0fd2) (2018-09-23) build: use a separate file for NCP database config
+
+[v0.60.3 ](https://github.com/nextcloud/nextcloudpi/commit/1bfcebc) (2018-09-23) nc-update-nextcloud: workaround news integrity bug
 
 [v0.60.2 ](https://github.com/nextcloud/nextcloudpi/commit/5914624) (2018-09-21) DDNS_spdyn.sh : Send new IP only when changed.
 
-[v0.60.1](https://github.com/nextcloud/nextcloudpi/commit/f80ee23) (2018-07-31) nc-restore: restore to volume in docker container
+[v0.60.1 ](https://github.com/nextcloud/nextcloudpi/commit/f80ee23) (2018-07-31) nc-restore: restore to volume in docker container
 
 [v0.60.0 ](https://github.com/nextcloud/nextcloudpi/commit/3a1b974) (2018-09-22) add nc-previews
 

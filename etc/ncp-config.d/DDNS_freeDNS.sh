@@ -24,7 +24,7 @@ install()
 configure() 
 {
   [[ $ACTIVE_ != "yes" ]] && { 
-    rm /etc/cron.d/freeDNS
+    rm -f /etc/cron.d/freeDNS
     service cron restart
     echo "FreeDNS client is disabled"
     return 0
@@ -34,7 +34,7 @@ configure()
 #!/bin/bash
 echo "FreeDNS client started"
 echo "${URL}"
-registeredIP=\$(nslookup ${DOMAIN_}|tail -n2|grep A|sed s/[^0-9.]//g)
+registeredIP=$(dig +short "$DOMAIN_"|tail -n1)
 currentIP=\$(wget -q -O - http://checkip.dyndns.org|sed s/[^0-9.]//g)
     [ "\$currentIP" != "\$registeredIP" ] && {
         wget -q -O /dev/null ${URL}
@@ -48,7 +48,7 @@ EOF
 
   cd /var/www/nextcloud
   sudo -u www-data php occ config:system:set trusted_domains 3 --value="$DOMAIN_"
-  sudo -u www-data php occ config:system:set overwrite.cli.url --value=https://"$DOMAIN_"
+  sudo -u www-data php occ config:system:set overwrite.cli.url --value=https://"$DOMAIN_"/
 
   echo "FreeDNS client is enabled"
 }

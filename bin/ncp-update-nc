@@ -23,6 +23,8 @@ VER="$1"
 
 # pre-checks
 ####################
+[[ -f /.docker-image ]] && { echo "This feature is still not available for docker containers"; exit 1; }
+
 cd /var/www/
 DATADIR="$( grep datadirectory nextcloud/config/config.php | awk '{ print $3 }' | grep -oP "[^']*[^']" | head -1 )"
 [[ -d /var/www/nextcloud-old ]] && { echo "Nextcloud backup directory found. Interrupted installation?"; exit 1; }
@@ -58,6 +60,12 @@ fi
 echo "Current   Nextcloud version $CURRENT"
 echo "Available Nextcloud version $VER"
 [[ "$NEED_UPDATE" == "true" ]] || { echo "Nothing to update"; exit 1; }
+
+# make sure that cron.php is not running and there are no pending jobs
+# https://github.com/nextcloud/server/issues/10949
+pgrep -cf cron.php &>/dev/null && { pkill -f cron.php; sleep 3; }
+pgrep -cf cron.php &>/dev/null && { echo "cron.php running. Abort"; exit 1; }
+mysql nextcloud <<<"UPDATE oc_jobs SET reserved_at=0;"
 
 # cleanup
 ####################
@@ -172,11 +180,6 @@ find nextcloud/ -type f -exec chmod 640 {} \;
 echo "Upgrade..."
 sudo -u www-data php nextcloud/occ upgrade      # && false # test point 
 sudo -u www-data php nextcloud/occ db:add-missing-indices
-
-# workaround for updating news to NC14 - bug https://github.com/nextcloud/news/issues/327
-F=/var/www/nextcloud/apps/news/vendor/ezyang/htmlpurifier/maintenance/.htaccess
-[[ -f "$F" ]] || echo "Deny from all" > "$F" || true
-sudo -u www-data php nextcloud/occ integrity:check-app --path=/var/www/nextcloud/apps/news news || true
 
 # done
 ####################
